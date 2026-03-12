@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibir archivos - PyShare</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Recibir archivos</h1>
+        <nav class="breadcrumb">
+            <a href="{{ url_for('index') }}">Inicio</a>
+            <span>/</span>
+            <span>Recibir</span>
+        </nav>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash">
+                {% for msg in messages %}
+                    <p>{{ msg }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Archivos disponibles</h2>
+                <p class="muted">Archivos que se han enviado desde la sección de “Enviar”.</p>
+            </div>
+            <div>
+                {% if uploads %}
+                    <a class="link-button" href="{{ url_for('descargar_todo') }}">⬇ Descargar todos (ZIP)</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if uploads %}
+            <table class="files-table">
+                <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tamaño</th>
+                    <th>Acción</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for f in uploads %}
+                    <tr>
+                        <td>{{ f.name }}</td>
+                        <td>
+                            {% if f.size < 1024 %}
+                                {{ f.size }} B
+                            {% elif f.size < 1024 * 1024 %}
+                                {{ '%.2f'|format(f.size / 1024) }} KB
+                            {% else %}
+                                {{ '%.2f'|format(f.size / (1024 * 1024)) }} MB
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="small-button" href="{{ url_for('descargar', filename=f.name) }}">Descargar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">Aún no se han enviado archivos. Usa la sección “Enviar archivos” para compartir.</p>
+        {% endif %}
+    </section>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,25 @@
+# Entorno virtual
+venv/
+
+# Archivos y carpetas generadas por Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Archivos de logs y temporales
+*.log
+*.tmp
+*.bak
+
+# Configuración específica de editor/IDE
+.vscode/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Carpetas de datos de la app (no versionar contenido dinámico)
+pyshare/uploads/
+

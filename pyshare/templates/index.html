@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Compartir archivos en red</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Compartir archivos en red</h1>
+        <p class="subtitle">Comparte archivos fácilmente entre dispositivos conectados a la misma WiFi.</p>
+    </header>
+
+    <main class="main-options">
+        <a class="big-button send" href="{{ url_for('enviar') }}">Enviar archivos</a>
+        <a class="big-button receive" href="{{ url_for('recibir') }}">Recibir archivos</a>
+    </main>
+
+    <footer>
+        <p>Servidor Flask en red local</p>
+    </footer>
+</div>
+</body>
+</html>
+
