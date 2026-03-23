@@ -1,7 +1,7 @@
-# PyShare – Compartir archivos en red local
+# PyShare – Compartir archivos en red local (modo nativo)
 
-Aplicación web sencilla para **compartir archivos en una red WiFi local** usando Python y Flask.  
-Funciona desde el navegador (PC, laptop, celular, tablet) sin necesidad de internet.
+Aplicación nativa sencilla para **compartir carpetas y archivos grandes en una red local** usando solo Python.  
+No requiere navegador ni Flask; todo se hace con scripts y una pequeña interfaz de escritorio.
 
 ---
 
@@ -31,17 +31,13 @@ Si la versión es menor a 3.9, instala una versión más nueva desde la página 
 
 ## 2. Estructura del proyecto
 
-La carpeta principal del proyecto es `pyshare` y contiene:
+La carpeta principal del proyecto es `pyshare` y contiene, entre otros:
 
-- `app.py` → servidor Flask
-- `uploads/` → aquí se guardan los archivos enviados y desde aquí se descargan
-- `shared/` → (actualmente no se usa en la UI, puedes ignorarla)
-- `templates/`
-  - `index.html`
-  - `enviar.html`
-  - `recibir.html`
-- `static/`
-  - `style.css`
+- `native_common.py` → utilidades compartidas del modo nativo
+- `native_server.py` → servidor nativo (recibe carpetas grandes)
+- `native_client.py` → cliente nativo (envía carpetas grandes)
+- `native_gui.py` → interfaz gráfica simple para usar servidor/cliente
+- `pack_folder.py` / `unpack_manifest.py` → empaquetar/verificar carpetas muy grandes
 
 En la carpeta superior (donde está `pyshare`) hay un archivo:
 
@@ -60,17 +56,18 @@ Lleva estas carpetas/archivos al nuevo PC (por USB, red, etc.):
 - Carpeta `pyshare/` completa
 - Archivo `requirements.txt`
 
-Quedará algo así:
+Quedará algo así (simplificado):
 
 ```text
 carpeta_de_trabajo/
 ├── requirements.txt
 └── pyshare/
-    ├── app.py
-    ├── uploads/
-    ├── shared/
-    ├── templates/
-    └── static/
+    ├── native_common.py
+    ├── native_server.py
+    ├── native_client.py
+    ├── native_gui.py
+    ├── pack_folder.py
+    └── unpack_manifest.py
 ```
 
 ### 3.2. (Opcional pero recomendado) Crear entorno virtual
@@ -93,122 +90,120 @@ Si todo va bien, verás algo como `(venv)` al inicio de la línea de comandos.
 
 ### 3.3. Instalar dependencias
 
-Con el entorno virtual activado (o con Python del sistema) ejecuta:
+Este proyecto usa solo la **librería estándar de Python**, por lo que no necesitas instalar paquetes extra.
+
+El archivo `requirements.txt` está vacío a propósito para dejar claro que no hay dependencias externas.
+
+---
+
+## 4. Modo avanzado para juegos / carpetas muy grandes
+
+Para carpetas de varios GB (por ejemplo juegos), la subida directa por WiFi puede fallar.  
+Para esos casos puedes usar dos scripts de ayuda incluidos en `pyshare/`:
+
+- `pack_folder.py` → se ejecuta en el **PC origen**
+- `unpack_manifest.py` → se ejecuta en el **PC destino**
+
+La idea:
+
+1. En el **PC origen**:
+   - Crea un paquete de la carpeta grande en partes más pequeñas, con un **manifest** que describe todos los archivos.
+2. Usa PyShare para enviar esos ZIP al otro PC.
+3. En el **PC destino**:
+   - Reconstruyes todo tal cual estaba usando `unpack_manifest.py`, que verifica tamaños y hashes.
+
+### 7.1. Preparar carpeta grande en el PC origen
+
+Desde la carpeta `pyshare`:
 
 ```bash
-pip install -r requirements.txt
+python pack_folder.py "C:\ruta\a\tu_juego" --salida "C:\ruta\paquetes_juego" --max-gb 1
 ```
 
-Esto instalará al menos:
+- `--salida` → carpeta donde se guardarán:
+  - `manifest.json`
+  - `juego_part01.zip`, `juego_part02.zip`, ...
+- `--max-gb` → tamaño aproximado máximo por ZIP (ejemplo: `1` = 1 GB por parte).  
+  Pon `0` si quieres un solo ZIP (no recomendado para 4 GB por WiFi).
 
-- `Flask`
-- `Werkzeug`
+Luego, con PyShare:
 
----
+- En la página **Enviar**, selecciona esos ZIP desde la carpeta de paquetes y súbelos (puedes hacerlo en varias tandas).
 
-## 4. Ejecutar el servidor
+### 7.2. Reconstruir en el PC destino
 
-1. Ir a la carpeta `pyshare`:
+En el PC que recibe, después de haber descargado todos los ZIP y `manifest.json` en una carpeta (por ejemplo `C:\paquetes_juego`), ejecuta:
 
-   ```bash
-   cd pyshare
-   ```
-
-2. Ejecutar la aplicación:
-
-   ```bash
-   python app.py
-   ```
-
-3. Si todo está correcto, verás algo como:
-
-   ```text
-   * Running on http://0.0.0.0:5000
-   ```
-
-4. En el **mismo PC** abre el navegador y entra a:
-
-   ```text
-   http://127.0.0.1:5000
-   ```
-
----
-
-## 5. Conexión desde otros dispositivos de la red
-
-Para que celulares, tablets u otros PCs entren a PyShare:
-
-1. En el **PC servidor** (donde corre `python app.py`), obtener su IP local.
-
-   - En Windows, en una consola:
-
-     ```bash
-     ipconfig
-     ```
-
-   - Busca la IP IPv4 de tu adaptador de red (ejemplo: `192.168.1.50`).
-
-2. En el navegador de otro dispositivo (móvil, tablet, laptop):
-
-   - Ir a:
-
-     ```text
-     http://192.168.1.50:5000
-     ```
-
-   - Cambia `192.168.1.50` por la IP real de tu PC.
-
-> Nota: todos los dispositivos deben estar conectados a la **misma red WiFi o LAN**.
-
----
-
-## 6. Cómo usar la aplicación
-
-### 6.1. Página principal
-
-Al entrar verás:
-
-- Título: **“Compartir archivos en red”**
-- Dos botones grandes:
-  - **Enviar archivos**
-  - **Recibir archivos**
-
-### 6.2. Enviar archivos
-
-1. Entra a la opción **“Enviar archivos”**.
-2. Verás:
-   - Botón **“Elegir archivos”**:
-     - Puedes seleccionar **una carpeta completa** (en navegadores como Chrome/Edge) o varios archivos.
-   - Debajo aparecerá una **vista en forma de árbol**:
-     - 📁 carpetas
-     - 📄 documentos
-     - 🖼 imágenes
-     - 🎬 videos
-     - Cada elemento tiene su **checkbox**.
-3. Marca o desmarca lo que quieras enviar usando los checks.
-4. Pulsa **“Subir a recibir”**.
-5. La aplicación enviará esos archivos al servidor y te mostrará la página **“Recibir archivos”**, donde aparecen listos para descargar.
-
-### 6.3. Recibir / descargar archivos
-
-1. Entra a la opción **“Recibir archivos”** (desde el menú principal o desde el botón).
-2. Verás una tabla con:
-   - Nombre del archivo.
-   - Tamaño aproximado (B / KB / MB).
-   - Botón **“Descargar”** para cada archivo.
-3. Opcionalmente puedes usar el botón **“Descargar todos (ZIP)”** para bajar todo en un solo archivo comprimido.
-
-Los archivos que aparecen aquí se almacenan en la carpeta:
-
-```text
-pyshare/uploads/
+```bash
+python unpack_manifest.py "C:\paquetes_juego" --dest "C:\juego_recibido" --borrar-zip
 ```
 
-Si quieres limpiarlos, puedes borrar manualmente el contenido de esa carpeta.
+- `--dest` → carpeta donde quieres reconstruir el juego.
+- `--borrar-zip` → si lo añades, borra los ZIP cuando termine correctamente.
+
+El script:
+
+- Extrae todo respetando la estructura de carpetas.
+- Comprueba:
+  - Tamaño de cada archivo.
+  - Hash SHA‑1 de cada archivo.
+- Muestra un resumen:
+  - Cuántos archivos están OK.
+  - Si falta alguno o está corrupto.
+
+De esta forma puedes:
+
+- Enviar juegos / carpetas de varios GB **por partes**.
+- Verificar que en el PC destino **llegó todo y está igual que en el origen**.
+
+### 4.3. Modo nativo (sin web) para grandes volúmenes
+
+Modo nativo simple, por consola:
+
+- `native_server.py` → se ejecuta en el PC que **recibe**
+- `native_client.py` → se ejecuta en el PC que **envía**
+
+Ejemplo de uso:
+
+En el **PC destino** (recibe):
+
+```bash
+cd pyshare
+python native_server.py --host 0.0.0.0 --port 6000 --dest native_uploads
+```
+
+En el **PC origen** (envía, estando en la misma red):
+
+```bash
+cd pyshare
+python native_client.py 192.168.1.50 --port 6000 --carpeta "C:\mi_juego"
+```
+
+- Cambia `192.168.1.50` por la IP real del servidor.
+- La carpeta completa `C:\mi_juego` se enviará al servidor, que la reconstruirá dentro de `native_uploads`, respetando subcarpetas.
+- Si vuelves a ejecutar el cliente con la misma carpeta, los archivos que **ya existan con el mismo tamaño** se saltan, lo que ayuda a reintentar si hubo cortes.
+
+### 4.4. Interfaz gráfica nativa
+
+Para no usar la consola puedes lanzar una pequeña GUI:
+
+```bash
+cd pyshare
+python native_gui.py
+```
+
+- Pestaña **Servidor**:
+  - Configuras host, puerto y carpeta destino.
+  - Pulsas **“Iniciar servidor”**.
+- Pestaña **Cliente**:
+  - Pones IP del servidor, puerto y eliges la carpeta a enviar.
+  - Pulsas **“Enviar carpeta”**.
+
+Internamente usa `native_server` y `native_client`, pero con interfaz de ventanas.
 
 ---
 
-## 7. Notas sobre versiones de Python
+## 5. Notas sobre versiones de Python
 
 - El código está pensado para **Python 3.9+**.
 - Si en algún PC tienes una versión diferente y hay errores:
@@ -223,27 +218,24 @@ Si quieres limpiarlos, puedes borrar manualmente el contenido de esa carpeta.
 
 ---
 
-## 8. Problemas frecuentes
+## 6. Problemas frecuentes
 
-- **El navegador no abre la página desde otro dispositivo**
-  - Verifica que:
-    - El servidor siga ejecutándose (la terminal con `python app.py` debe estar abierta).
-    - Usas la IP correcta (no `127.0.0.1` en el otro dispositivo, sino la IP local del PC servidor).
-    - No haya un firewall bloqueando el puerto `5000`.
+- **No conecta el cliente con el servidor**
+  - Verifica que ambos PCs estén en la **misma red**.
+  - Revisa la IP y puerto del servidor.
+  - Asegúrate de que el firewall no bloquee el puerto usado (por defecto 6000).
 
-- **Error al instalar dependencias**
-  - Asegúrate de que `pip` corresponde a la misma versión de Python con la que vas a ejecutar:
+- **Transferencia muy lenta**
+  - Usa, si es posible, conexión por **cable de red**.
+  - Evita que los equipos se duerman durante la transferencia.
 
-    ```bash
-    python -m pip install -r requirements.txt
-    ```
-
-- **No se suben archivos grandes**
-  - Revisa tu conexión de red y asegúrate de que el navegador no se cierre ni recargue.
+- **Faltan archivos al reconstruir con unpack_manifest**
+  - Asegúrate de haber copiado **todas las partes ZIP** y el `manifest.json`.
+  - Vuelve a ejecutar `pack_folder.py` en origen si el manifest indica errores.
 
 ---
 
-## 9. Resumen rápido para un nuevo PC
+## 7. Resumen rápido para un nuevo PC
 
 1. Instalar **Python 3.9+**.
 2. Copiar `pyshare/` y `requirements.txt`.
@@ -260,16 +252,10 @@ Si quieres limpiarlos, puedes borrar manualmente el contenido de esa carpeta.
    pip install -r requirements.txt
    ```
 
-5. Ejecutar servidor:
+5. Ejecutar en ese PC el modo que quieras:
+   - Modo nativo consola → `native_server.py` / `native_client.py`
+   - Modo nativo con GUI → `native_gui.py`
 
-   ```bash
-   cd pyshare
-   python app.py
-   ```
+## 8. Captura de la interfaz
 
-6. Desde cualquier dispositivo en la misma red abrir en el navegador:
-
-   ```text
-   http://IP_DEL_PC:5000
-   ```
-
+![Interfaz PyShare Native](image/README/1774244814741.png)
