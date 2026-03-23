@@ -256,3 +256,6 @@ Internamente usa `native_server` y `native_client`, pero con interfaz de ventana
    - Modo nativo consola → `native_server.py` / `native_client.py`
    - Modo nativo con GUI → `native_gui.py`
 
+## 8. Captura de la interfaz
+
+![Interfaz PyShare Native](image/README/1774244814741.png)
